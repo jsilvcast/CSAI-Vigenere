@@ -1,4 +1,7 @@
 #! /usr/bin/python3
+import itertools
+import time
+
 
 def gcd(a, b):
     while b > 0:
@@ -183,22 +186,26 @@ def main():
 
     print("\n")
 
-    # Calculamos a lonxitude maxima que poden ter as cadenas
-    maxima = 0
-    for cad in lista_cadenas_descifradas:
-        if (len(cad)) > maxima:
-            maxima = len(cad)
-
     # Desciframos por fin :)
     cadena_descifrada_FINAL = ""
-    for indice in range(maxima):
-        for cad in lista_cadenas_descifradas:
-            if (indice < maxima) and (indice < len(cad)):
-                cadena_descifrada_FINAL = cadena_descifrada_FINAL + cad[indice]
+
+    cad_iter = itertools.cycle([iter(x) for x in lista_cadenas_descifradas])
+
+    count = len(lista_cadenas_descifradas)
+    while True:
+        try:
+            cadena_descifrada_FINAL += next(next(cad_iter))
+        except StopIteration:
+            count -= 1
+            if count == 0:
+                break
+
 
     print("TEXTO DESCIFRADO: ")
     print(cadena_descifrada_FINAL)
-    print()
+
 
 if __name__ == '__main__':
+    start = time.time()
     main()
+    print(time.time() - start)
