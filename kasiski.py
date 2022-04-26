@@ -1,33 +1,9 @@
 #! /usr/bin/python3
 
-
-def esDivisible(numero, lista):
-    '''
-            Return True:
-                    si el numero no deja resto
-                    con todos los números de la lista
-    '''
-    divisible = True
-    for i in lista:
-        if not i % numero == 0:
-            divisible = False
-            break
-    return divisible
-
-
-def mcd(numeros):
-    '''
-            Calcula el maximo común divisor
-            * Numeros: es una lista de enteros
-    '''
-    mcd = 1
-    numeros.sort()  # ordena la lista de menor a mayor
-    # recorre hasta el numero mayor de la lista (el último)
-    for i in range(2, numeros[-1] + 1):
-        if esDivisible(i, numeros):
-            mcd = i
-    return mcd
-
+def gcd(a, b):
+    while b > 0:
+        a, b = b, a % b
+    return a
 
 # Function to sort the list of tuples by its second item
 def sortTuple(tup):
@@ -128,10 +104,7 @@ def main():
     # Mentras o tamaño de cadena sexa máis pequeno que a lonxitude do texto
     # (Para buscar grupos de letras con todas as lonxitudes posibles)
     while tam_subcadena < len_texto:
-        for i in range(len_texto):
-            if i + tam_subcadena > len_texto:
-                    # Avanza caracter a caracter (i) ata que chega ao final
-                break
+        for i in range(len_texto - tam_subcadena + 1):
 
             # Conxunto de caracteres que recorremos
             subcadena_aux = texto_entrada[i:(i + tam_subcadena)]
@@ -167,39 +140,23 @@ def main():
     # Lista de distancias calculada a partir do diccionario temporal
     lista_distancias = []
 
-    for key in subcadenas_encontradas.keys():
-        for index, item in enumerate(reversed(subcadenas_encontradas[key])):
-            if len(subcadenas_encontradas[key]) > (index + 1):
-                lista_distancias.append(subcadenas_encontradas[key][
-                    index + 1] - subcadenas_encontradas[key][index])
-
-    # print(lista_distancias)
-    # print()
+    for positions in subcadenas_encontradas.values():
+        for i in range(len(positions)-1):
+            lista_distancias.append(positions[i+1]-positions[i])
 
     # Descartamos mcd = 1 para evitar trigramas casuales que nos impidan
     # adivinar la longitud de la clave
     longitud = lista_distancias[0]
-    for i in range(len(lista_distancias)):
-        if(i + 1 <= len(lista_distancias)):
-            aux1 = mcd([lista_distancias[i], longitud])
-            if (aux1 != 1):
-                longitud = aux1
+    for i in lista_distancias[1:]:
+        aux = gcd(longitud, i)
+        if aux != 1:
+            longitud = aux
 
     print("La posible longitud de la clave es: " + str(longitud))
     print()
 
     # Inicializamos a lista con tantos elementos como longitud ten a clave
-    lista_subcadenas = []
-    for a in range(longitud):
-        lista_subcadenas.append("")
-
-    # Creamos as diferentes cadenas de distintos alfabetos
-    count = 0
-    for j in texto_entrada:
-        lista_subcadenas[count] = lista_subcadenas[count] + j
-        count += 1
-        if count >= longitud:
-            count = 0
+    lista_subcadenas = [texto_entrada[i::longitud] for i in range(longitud)]
 
     for a in range(longitud):
         print("Cadena " + str(a) + ": " + lista_subcadenas[a])
@@ -210,17 +167,16 @@ def main():
 
     print("Aplicando algoritmo AEOS...")
     print("La posible clave es: ", end="")
-    for b in range(longitud):
-        for i in lista_subcadenas[b]:
-            if i in dict_repeticiones.keys():
-                dict_repeticiones[i] = dict_repeticiones.get(i) + 1
+    for cadena in lista_subcadenas:
+        for char in cadena:
+            if char in dict_repeticiones:
+                dict_repeticiones[char] += 1
             else:
-                dict_repeticiones[i] = 1
-        lista_ordenada = sortTuple(list(dict_repeticiones.items()))
+                dict_repeticiones[char] = 1
 
         
         cadena_descifrada = descifrar_cadena(
-            lista_subcadenas[b], dict_repeticiones)
+            cadena, dict_repeticiones)
         lista_cadenas_descifradas.append(cadena_descifrada)
 
         dict_repeticiones = {}
