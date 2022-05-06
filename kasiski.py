@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+import argparse
 import itertools
 import time
 
@@ -89,9 +90,9 @@ def descifrar_cadena(cadena, dict_repeticiones):
     return cadena_descifrada
 
 
-def main():
+def main(file_name):
 
-    archivo_entrada = open("entrada_kasiski.txt", "r")
+    archivo_entrada = open(file_name, "r")
 
     texto_entrada = archivo_entrada.read()
 
@@ -206,6 +207,10 @@ def main():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Descifra un texto cifrado con el algoritmo de Cezar')
+    parser.add_argument('-f', '--file', type=str,help='Fichero de texto cifrado')
+    args = parser.parse_args()
+
     start = time.time()
-    main()
-    print(time.time() - start)
+    main(args.file)
+    print("--- %s seconds ---" % (time.time() - start))
