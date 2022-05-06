@@ -95,6 +95,7 @@ def main(file_name):
     archivo_entrada = open(file_name, "r")
 
     texto_entrada = archivo_entrada.read()
+    texto_entrada = texto_entrada.upper()
 
     len_texto = len(texto_entrada)
 
