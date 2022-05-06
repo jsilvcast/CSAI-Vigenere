@@ -2,6 +2,7 @@
 import argparse
 import itertools
 import time
+import numpy as np
 
 
 def gcd(a, b):
@@ -92,60 +93,54 @@ def descifrar_cadena(cadena, dict_repeticiones):
 
 def main(file_name):
 
-    archivo_entrada = open(file_name, "r")
+    file_input = open(file_name, "r")
 
-    texto_entrada = archivo_entrada.read()
-    texto_entrada = texto_entrada.upper()
+    input_text = file_input.read()
+    input_text = input_text.upper()
 
-    len_texto = len(texto_entrada)
+    text_len = len(input_text)
 
-    # Almacena de forma temporal a ubicación dos grupos repetidos de letras e
-    # a súa distancia entre elas
-    subcadenas_encontradas = {}
+    substring_found = {}
 
-    # Lonxitude dos grupos de letras repetidas
-    tam_subcadena = 3
+    # Substring length
+    substring_len = 3
 
-    # Mentras o tamaño de cadena sexa máis pequeno que a lonxitude do texto
-    # (Para buscar grupos de letras con todas as lonxitudes posibles)
-    while tam_subcadena < len_texto:
-        for i in range(len_texto - tam_subcadena + 1):
+    # Iterate over all possible substrings until checkIfEnterInElse or text_len
+    for i in range(text_len - substring_len + 1):
+        checkIfEnterInElse = False
+        for j in range(substring_len, text_len - substring_len + 1):
+            subcadena = input_text[j:j+substring_len]
+            if substring_found.get(subcadena) == None:
+                substring_found[subcadena] = []
+                substring_found[subcadena].append(j + (substring_len - 1))
+            else:
+                checkIfEnterInElse = True
+                substring_found[subcadena].append(j + (substring_len - 1))
 
-            # Conxunto de caracteres que recorremos
-            subcadena_aux = texto_entrada[i:(i + tam_subcadena)]
+        if checkIfEnterInElse == False:
+            break
+        substring_len += 1
 
-            # Se se repite a subcadena polo menos duas veces
-            if texto_entrada.count(subcadena_aux) >= 2:
+    # Create a dict with freqs
+    subcadenas_frecuencias = {}
+    for a in substring_found:
+        subcadenas_frecuencias[a] = len(substring_found[a])
 
-                # Chapuza para poder borrar dentro do bucle
-                subcadenas_encontradas_iterable = dict(subcadenas_encontradas)
-                for key in subcadenas_encontradas_iterable.keys():
-                    # Subcadena de maior tamaño repetida
-                    # Borramos a máis pequena
-                    if (key in subcadena_aux) and (key != subcadena_aux):
-                        del subcadenas_encontradas[key]
-                        break
+    lista_subcadenas_frecuencias = list(subcadenas_frecuencias.items())
+    # Use numpy to fast comparison
+    np_lista_subcadenas_frecuencias = np.array(lista_subcadenas_frecuencias)
 
-                # Gardamos de forma provisional a subcadena máis a posición donde
-                # acaba, (usamos -1 porque a cadena empeza en 0)
-                if subcadenas_encontradas.get(subcadena_aux, None) == None:
-                    subcadenas_encontradas[subcadena_aux] = [texto_entrada.find(
-                        subcadena_aux, i) + (tam_subcadena - 1)]
-                else:
-                    lista_inicial = subcadenas_encontradas.get(subcadena_aux)
-                    lista_inicial.append(texto_entrada.find(
-                        subcadena_aux, i) + (tam_subcadena - 1))
-                    subcadenas_encontradas[subcadena_aux] = lista_inicial
+    # remove from np_lista_subcadenas_frecuencias elements with frequency > 1
+    np_lista_subcadenas_frecuencias = np_lista_subcadenas_frecuencias[np_lista_subcadenas_frecuencias[:, 1] == '1']
 
-        tam_subcadena += 1
-
-    # print(subcadenas_encontradas)
-    # print()
+    # remove from substring_found elements in np_lista_subcadenas_frecuencias
+    for a in np_lista_subcadenas_frecuencias[:, 0]:
+        del substring_found[a]
 
     # Lista de distancias calculada a partir do diccionario temporal
     lista_distancias = []
 
-    for positions in subcadenas_encontradas.values():
+    for positions in substring_found.values():
         for i in range(len(positions)-1):
             lista_distancias.append(positions[i+1]-positions[i])
 
@@ -161,7 +156,7 @@ def main(file_name):
     print()
 
     # Inicializamos a lista con tantos elementos como longitud ten a clave
-    lista_subcadenas = [texto_entrada[i::longitud] for i in range(longitud)]
+    lista_subcadenas = [input_text[i::longitud] for i in range(longitud)]
 
     for a in range(longitud):
         print("Cadena " + str(a) + ": " + lista_subcadenas[a])
