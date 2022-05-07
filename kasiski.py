@@ -139,18 +139,21 @@ def kasiski_length(input_text, text_len, substring_len):
     # Lista de distancias calculada a partir do diccionario temporal
     lista_distancias = []
 
+    if len(substring_found) < 2:
+        return 1
+
     for positions in substring_found.values():
         for i in range(len(positions) - 1):
             lista_distancias.append(positions[i + 1] - positions[i])
 
     # Descartamos mcd = 1 para evitar trigramas casuales que nos impidan
     # adivinar la longitud de la clave
-    if len(lista_distancias) < 2:
-        return 1
     longitud_minima = lista_distancias[0]
     for i in lista_distancias[1:]:
         aux = gcd(longitud_minima, i)
         longitud_minima = aux
+        if longitud_minima == 1:
+            return longitud_minima
 
     return longitud_minima
 
@@ -161,11 +164,15 @@ def main(file_name, hash):
     text_len = len(input_text)
 
     # Substring length
-    substring_len = 7
+    substring_lens = [3, 7, 11, 13]
+    i = 0
+    substring_len = substring_lens[0]
     longitud_minima = 1
     while longitud_minima <= 1:
+        print("Trying substring length:", substring_len)
         longitud_minima = kasiski_length(input_text, text_len, substring_len)
-        substring_len -= 2
+        i += 1
+        substring_len = substring_lens[i]
 
     for longitud in range(longitud_minima, 20):
         print("Posible longitud de la clave: " + str(longitud))
