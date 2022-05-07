@@ -102,21 +102,13 @@ def check_product(lista_cadenas, lista_caracteres, length, maxima, text_len, fou
             quit.set()
     quit.set()
 
-def main(file_name, hash):
-    file_input = open(file_name, mode="r", encoding="utf-8")
-
-    input_text = file_input.read().upper()
-    text_len = len(input_text)
-
-    substring_found = {}
-    # Substring length
-    substring_len = 7
-
+def kasiski_length(input_text, text_len, substring_len):
     # Iterate over all possible substrings until checkIfEnterInElse or text_len
+    substring_found = {}
     for i in range(text_len - substring_len + 1):
         checkIfEnterInElse = False
         for j in range(substring_len, text_len - substring_len + 1):
-            subcadena = input_text[j:j+substring_len]
+            subcadena = input_text[j:j + substring_len]
             if substring_found.get(subcadena) == None:
                 substring_found[subcadena] = []
                 substring_found[subcadena].append(j + (substring_len - 1))
@@ -148,18 +140,32 @@ def main(file_name, hash):
     lista_distancias = []
 
     for positions in substring_found.values():
-        for i in range(len(positions)-1):
-            lista_distancias.append(positions[i+1]-positions[i])
+        for i in range(len(positions) - 1):
+            lista_distancias.append(positions[i + 1] - positions[i])
 
     # Descartamos mcd = 1 para evitar trigramas casuales que nos impidan
     # adivinar la longitud de la clave
     if len(lista_distancias) < 2:
-        exit(-1)
+        return 1
     longitud_minima = lista_distancias[0]
     for i in lista_distancias[1:]:
         aux = gcd(longitud_minima, i)
-        if aux != 1:
-            longitud_minima = aux
+        longitud_minima = aux
+
+    return longitud_minima
+
+def main(file_name, hash):
+    file_input = open(file_name, mode="r", encoding="utf-8")
+
+    input_text = file_input.read().upper()
+    text_len = len(input_text)
+
+    # Substring length
+    substring_len = 7
+    longitud_minima = 1
+    while longitud_minima <= 1:
+        longitud_minima = kasiski_length(input_text, text_len, substring_len)
+        substring_len -= 2
 
     for longitud in range(longitud_minima, 20):
         print("Posible longitud de la clave: " + str(longitud))
