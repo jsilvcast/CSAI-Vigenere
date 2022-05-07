@@ -8,7 +8,21 @@ import numpy as np
 from multiprocessing import Process, Event, Manager
 
 from freqs import frequency_array_27, frequency_array_26
+import hashlib
 
+def chr_to_number(char):
+    number = ord(char) - 65
+    if number >= 14:
+        number += 1
+    if number == 145:
+        return 14
+    return number
+
+def number_to_chr(char):
+    number = ord(char) - 65
+    if number == 144:
+        return 14
+    return number
 
 def gcd(a, b):
     while b > 0:
@@ -55,7 +69,7 @@ def descifrar_cadena2(cadena, repeticiones_27):
     x_27 = np.dot(repeticiones_desp_27, frequency_array_27)
     x_26 = np.dot(repeticiones_desp_26, frequency_array_26)
     x_26_27 = np.dot(repeticiones_desp_26_27, frequency_array_26)
-
+    print(np.argmax(np.max(x_27, axis=0), axis=0))
     return sorted_enumerate(x_27[:,0]), sorted_enumerate(x_27[:,1]), sorted_enumerate(x_27[:,2])
 
 
@@ -98,7 +112,7 @@ def descifrar_cadena(cadena, dict_repeticiones):
                     if lista_ordenada_frecuencias[(a+4+10+4)%26] >= limite:
                         valor_total = valor_total + lista_ordenada_frecuencias[(a+4)%26]
                         dict_temporal_seleccion[alfabeto_normal[a]] = valor_total
-    
+
     list_aux = list(dict_temporal_seleccion.items())
     letra_clave = ""
     max_valor = 0
@@ -123,24 +137,36 @@ def descifrar_cadena(cadena, dict_repeticiones):
 
     return cadena_descifrada
 
-def check_product(lista_caracteres, result_key, foundit, quit, d):
+alfabeto_normal = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"
+
+def check_product(lista_cadenas, lista_caracteres, length, maxima, foundit, quit, hash):
     i = 0
+    lista_cadenas2 = [np.zeros(lista_cadenas[i].shape, dtype=np.int32) for i in range(length)]
     for comb in itertools.product(*lista_caracteres):
         # break
         key = ""
-        for ordinal in comb:
-            key += chr(ordinal + 65)
+        for index in range(length):
+            key += alfabeto_normal[comb[index]]
+            np.subtract(lista_cadenas[index], comb[index], out=lista_cadenas2[index])
+            np.mod(lista_cadenas2[index], 27, out=lista_cadenas2[index])
+        cadena_descifrada_FINAL = ""
+        for indice in range(maxima):
+            for cad in lista_cadenas2:
+                if (indice < maxima) and (indice < len(cad)):
+                    cad_indice = cad[indice]
+                    char = alfabeto_normal[cad_indice]
+                    cadena_descifrada_FINAL = cadena_descifrada_FINAL + char
+
         i += 1
-        if key == result_key:
-            d["Key"] = key
-            d["Comb"] = comb
-            d["i"] = i
-            # print(d)
+
+        if hashlib.sha256(cadena_descifrada_FINAL.encode()).hexdigest() == hash:
+            print(key, comb, i)
+            print(cadena_descifrada_FINAL)
             foundit.set()
             quit.set()
     quit.set()
 
-def main(file_name, result_key):
+def main(file_name, hash):
     file_input = open(file_name, mode="r", encoding="utf-8")
 
     input_text = file_input.read().upper()
@@ -202,10 +228,10 @@ def main(file_name, result_key):
         print()
 
         # Inicializamos a lista con tantos elementos como longitud ten a clave
-        lista_subcadenas = [input_text[i::longitud] for i in range(longitud)]
+        lista_subcadenas = [np.array(list(map(chr_to_number, input_text[i::longitud])), dtype=np.int32) for i in range(longitud)]
 
         for a in range(longitud):
-            print("Cadena " + str(a) + ": " + lista_subcadenas[a])
+            print("Cadena ", lista_subcadenas[a])
             print()
 
         repeticiones_27 = np.zeros(27, dtype=np.uint16)
@@ -218,11 +244,8 @@ def main(file_name, result_key):
         lista_caracteres_es = []
         lista_caracteres_fr = []
         for cadena in lista_subcadenas:
-            for char in cadena:
-                number = ord(char) - 65
-                if number == 144:
-                    number = 26
-                repeticiones_27[number] += 1
+            for ordinal in cadena:
+                repeticiones_27[ordinal] += 1
 
             caracteres_en, caracteres_es, caracteres_fr = descifrar_cadena2(
                 cadena, repeticiones_27)
@@ -238,31 +261,36 @@ def main(file_name, result_key):
         #     for return_value in p.map(f, [lista_caracteres_en, lista_caracteres_es, lista_caracteres_fr]):
         #         if return_value:
         #             return
+        maxima = 0
+        for cad in lista_subcadenas:
+            if (len(cad)) > maxima:
+                maxima = len(cad)
+        length = len(lista_caracteres_en)
+
         foundit = Event()
         quit = Event()
-        with Manager() as manager:
-            d = manager.dict()
-            p_en = Process(target=check_product, args=(lista_caracteres_en, result_key, foundit, quit,  d))
-            p_es = Process(target=check_product, args=(lista_caracteres_es, result_key, foundit, quit,  d))
-            p_fr = Process(target=check_product, args=(lista_caracteres_fr, result_key, foundit, quit,  d))
-            p_en.start()
-            p_es.start()
-            p_fr.start()
+        p_en = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_en, length, maxima,
+                                                   foundit, quit, hash))
+        p_es = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_es, length, maxima,
+                                                   foundit, quit, hash))
+        p_fr = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_fr, length, maxima,
+                                                   foundit, quit, hash))
+        p_en.start()
+        p_es.start()
+        p_fr.start()
 
-            quit.wait()
-            if foundit.is_set():
-                print(d)
-                p_en.terminate()
-                p_es.terminate()
-                p_fr.terminate()
-                return
+        quit.wait()
+        if foundit.is_set():
+            p_en.terminate()
+            p_es.terminate()
+            p_fr.terminate()
+            return
 
-            p_en.join()
-            p_es.join()
-            p_fr.join()
-            if foundit.is_set():
-                print(d)
-                return
+        p_en.join()
+        p_es.join()
+        p_fr.join()
+        if foundit.is_set():
+            return
 
 
         # if check_product(lista_caracteres_es, result_key=result_key):
@@ -298,10 +326,10 @@ def main(file_name, result_key):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Descifra un texto cifrado con el algoritmo de Cezar')
     parser.add_argument('-f', '--file', type=str,help='Fichero de texto cifrado')
-    parser.add_argument('-k', '--key', type=str, help='Key')
+    parser.add_argument('-c', '--check', type=str, help='Hash to check')
     args = parser.parse_args()
 
     start = time.time()
-    main(args.file, args.key)
-    # cProfile.run("main(args.file, args.key)")
+    main(args.file, args.check)
+    # cProfile.run("main(args.file, args.key, args.check)")
     print("--- %s seconds ---" % (time.time() - start))
