@@ -5,7 +5,7 @@ import itertools
 import time
 
 import numpy as np
-from multiprocessing import Process, Event, Barrier, Manager
+from multiprocessing import Process, Event, Manager
 
 from freqs import frequency_array_27, frequency_array_26
 
@@ -142,6 +142,7 @@ def check_product(lista_caracteres, result_key, foundit, quit, d):
             d["Key"] = key
             d["Comb"] = comb
             d["i"] = i
+            # print(d)
             foundit.set()
             quit.set()
     quit.set()
@@ -246,7 +247,6 @@ def main(file_name, result_key):
         #             return
         foundit = Event()
         quit = Event()
-        barrier = Barrier(3)
         with Manager() as manager:
             d = manager.dict()
             p_en = Process(target=check_product, args=(lista_caracteres_en, result_key, foundit, quit,  d))
@@ -269,9 +269,6 @@ def main(file_name, result_key):
             p_fr.join()
             if foundit.is_set():
                 print(d)
-                p_en.terminate()
-                p_es.terminate()
-                p_fr.terminate()
                 return
 
 
