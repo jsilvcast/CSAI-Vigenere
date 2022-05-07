@@ -2,7 +2,6 @@
 import argparse
 import itertools
 import time
-import numpy as np
 
 import numpy as np
 
@@ -37,19 +36,19 @@ def sorted_enumerate(seq):
     return list
 
 def descifrar_cadena2(cadena, repeticiones_27):
-    repeticiones_desp_27 = np.zeros((27,27))
-    repeticiones_desp_26 = np.zeros((26,26))
-    repeticiones_desp_26_27 = np.zeros((27,26))
+    repeticiones_desp_27 = np.zeros((27,27), dtype=np.uint16)
+    repeticiones_desp_26 = np.zeros((26,26), dtype=np.uint16)
+    repeticiones_desp_26_27 = np.zeros((27,26), dtype=np.uint16)
     repeticiones_26 = repeticiones_27[:-1]
     repeticiones_desp_27[0] = repeticiones_27
     repeticiones_desp_26[0] = repeticiones_26
-    repeticiones_desp_26_27[0] = repeticiones_27[:-1]
+    repeticiones_desp_26_27[0] = repeticiones_26
     for i in range(1, 27):
-        roll_repeticiones_desp_27 = np.roll(repeticiones_27, i)
+        roll_repeticiones_desp_27 = np.roll(repeticiones_27, -i)
         repeticiones_desp_27[i] = roll_repeticiones_desp_27
         repeticiones_desp_26_27[i] = roll_repeticiones_desp_27[:-1]
         if i < 26:
-            repeticiones_desp_26[i] = np.roll(repeticiones_26, i)
+            repeticiones_desp_26[i] = np.roll(repeticiones_26, -i)
 
     x_27 = np.dot(repeticiones_desp_27, frequency_array_27)
     x_26 = np.dot(repeticiones_desp_26, frequency_array_26)
@@ -62,7 +61,7 @@ def descifrar_cadena2(cadena, repeticiones_27):
     number_26 = np.argmax(x_26[:, lang_26])
     number_26_27 = np.argmax(x_26_27[:, lang_26_27])
     order = sorted_enumerate(x_26[:,0])
-    return sorted_enumerate(x_26[:,0]), sorted_enumerate(x_26[:,1]), sorted_enumerate(x_26[:,2])
+    return sorted_enumerate(x_27[:,0]), sorted_enumerate(x_27[:,1]), sorted_enumerate(x_27[:,2])
 
 
 def descifrar_cadena(cadena, dict_repeticiones):
@@ -130,13 +129,11 @@ def descifrar_cadena(cadena, dict_repeticiones):
     return cadena_descifrada
 
 
-def main(file_name):
+def main(file_name, result_key):
 
-    file_input = open(file_name, mode="r",encoding="utf-8")
+    file_input = open(file_name, mode="r", encoding="utf-8")
 
-    input_text = file_input.read()
-    input_text = input_text.upper()
-
+    input_text = file_input.read().upper()
     text_len = len(input_text)
 
     substring_found = {}
@@ -201,12 +198,12 @@ def main(file_name):
             print("Cadena " + str(a) + ": " + lista_subcadenas[a])
             print()
 
-        repeticiones_27 = np.zeros(27)
+        repeticiones_27 = np.zeros(27, dtype=np.uint16)
         lista_cadenas_descifradas = []
 
         print("Aplicando algoritmo AEOS...")
         print("La posible clave es: ", end="")
-        dict_freq = {}
+
         lista_caracteres_en = []
         lista_caracteres_es = []
         lista_caracteres_fr = []
@@ -216,10 +213,6 @@ def main(file_name):
                 if number == 144:
                     number = 26
                 repeticiones_27[number] += 1
-                if char in dict_freq:
-                    dict_freq[char] += 1
-                else:
-                    dict_freq[char] = 1
 
             caracteres_en, caracteres_es, caracteres_fr = descifrar_cadena2(
                 cadena, repeticiones_27)
@@ -229,20 +222,21 @@ def main(file_name):
 
         print(lista_cadenas_descifradas)
 
-        for x in itertools.product(*lista_caracteres_en):
-            pass
-
+        # for comb in itertools.product(*lista_caracteres_en):
+        #     pass
+        i = 0
         for comb in itertools.product(*lista_caracteres_es):
+            # break
             key = ""
             for ordinal in comb:
                 key += chr(ordinal + 65)
+            i +=1
+            if key == result_key:
+                print(i, comb, key)
+                return
 
-            print(key)
-            if key == "AGUA":
-                return 
-
-        for x in itertools.product(*lista_caracteres_fr):
-            pass
+        # for comb in itertools.product(*lista_caracteres_fr):
+        #     pass
 
         continue
         print("\n")
@@ -268,8 +262,9 @@ def main(file_name):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Descifra un texto cifrado con el algoritmo de Cezar')
     parser.add_argument('-f', '--file', type=str,help='Fichero de texto cifrado')
+    parser.add_argument('-k', '--key', type=str, help='Key')
     args = parser.parse_args()
 
     start = time.time()
-    main(args.file)
+    main(args.file, args.key)
     print("--- %s seconds ---" % (time.time() - start))
