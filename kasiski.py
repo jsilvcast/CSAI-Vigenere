@@ -56,13 +56,6 @@ def descifrar_cadena2(cadena, repeticiones_27):
     x_26 = np.dot(repeticiones_desp_26, frequency_array_26)
     x_26_27 = np.dot(repeticiones_desp_26_27, frequency_array_26)
 
-    lang_27 = np.argmax(np.max(x_27, axis=0))
-    lang_26 = np.argmax(np.max(x_26, axis=0))
-    lang_26_27 = np.argmax(np.max(x_26_27, axis=0))
-    number_27 = np.argmax(x_27[:, lang_27])
-    number_26 = np.argmax(x_26[:, lang_26])
-    number_26_27 = np.argmax(x_26_27[:, lang_26_27])
-    order = sorted_enumerate(x_26[:,0])
     return sorted_enumerate(x_27[:,0]), sorted_enumerate(x_27[:,1]), sorted_enumerate(x_27[:,2])
 
 
