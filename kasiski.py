@@ -51,7 +51,7 @@ def sorted_enumerate(seq):
         k += 1
     return list
 
-def descifrar_cadena2(cadena, repeticiones_27):
+def descifrar_cadena2(repeticiones_27):
     repeticiones_desp_27 = np.zeros((27,27), dtype=np.uint16)
     repeticiones_desp_26 = np.zeros((26,26), dtype=np.uint16)
     repeticiones_desp_26_27 = np.zeros((27,26), dtype=np.uint16)
@@ -69,98 +69,34 @@ def descifrar_cadena2(cadena, repeticiones_27):
     x_27 = np.dot(repeticiones_desp_27, frequency_array_27)
     x_26 = np.dot(repeticiones_desp_26, frequency_array_26)
     x_26_27 = np.dot(repeticiones_desp_26_27, frequency_array_26)
-    print(np.argmax(np.max(x_27, axis=0), axis=0))
+    # print(np.argmax(np.max(x_27, axis=0), axis=0))
     return sorted_enumerate(x_27[:,0]), sorted_enumerate(x_27[:,1]), sorted_enumerate(x_27[:,2])
 
 
-def descifrar_cadena(cadena, dict_repeticiones):
-    alfabeto_normal = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"
-    alfabeto_desplazado = ""
-    cadena_descifrada = ""
+alfabeto_normal = b"ABCDEFGHIJKLMN\xb1OPQRSTUVWXYZ"
 
-    letras_comunes = ["E", "A", "O", "S"]
-    lista_ordenada_frecuencias = []
+def check_product(lista_cadenas, lista_caracteres, length, maxima, text_len, foundit, quit, hash):
 
-    #print("Dict rep: ")
-    #print(dict_repeticiones)
-
-    for a in alfabeto_normal:
-        aux = dict_repeticiones.get(a)
-        if (aux == None):
-            aux = 0
-        lista_ordenada_frecuencias.append(aux)
-
-    limite = 0
-    for n in lista_ordenada_frecuencias:
-        limite = limite + n
-
-    limite = int(limite * 0.03)
-
-    #print (limite)
-    #print (lista_ordenada_frecuencias)
-
-    dict_temporal_seleccion = {}
-
-    for a in range(len(lista_ordenada_frecuencias)):
-        valor_total = 0
-        if lista_ordenada_frecuencias[a] >= limite:
-            valor_total = valor_total + lista_ordenada_frecuencias[a]
-            if lista_ordenada_frecuencias[(a+4)%26] >= limite:
-                valor_total = valor_total + lista_ordenada_frecuencias[(a+4)%26]
-                if lista_ordenada_frecuencias[(a+4+10)%26] >= limite:
-                    valor_total = valor_total + lista_ordenada_frecuencias[(a+4)%26]
-                    if lista_ordenada_frecuencias[(a+4+10+4)%26] >= limite:
-                        valor_total = valor_total + lista_ordenada_frecuencias[(a+4)%26]
-                        dict_temporal_seleccion[alfabeto_normal[a]] = valor_total
-
-    list_aux = list(dict_temporal_seleccion.items())
-    letra_clave = ""
-    max_valor = 0
-    for b in list_aux:
-    	if b[1] > max_valor:
-    		max_valor = b[1]
-    		letra_clave = b[0]
-
-    print(letra_clave, end="")
-
-    # Crea un alfabeto desplazado con la letra que cifra
-    for i in range(26):
-        cod_ascii = (ord(letra_clave) + i)
-        if(cod_ascii > 90):
-            cod_ascii = cod_ascii - 26
-        alfabeto_desplazado = alfabeto_desplazado + chr(cod_ascii)
-
-    cadena = cadena.strip()
-    for a in cadena:
-        cadena_descifrada = cadena_descifrada + \
-            alfabeto_normal[alfabeto_desplazado.index(a)]
-
-    return cadena_descifrada
-
-alfabeto_normal = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"
-
-def check_product(lista_cadenas, lista_caracteres, length, maxima, foundit, quit, hash):
-    i = 0
     lista_cadenas2 = [np.zeros(lista_cadenas[i].shape, dtype=np.int32) for i in range(length)]
+    dictionaty_length = 27
     for comb in itertools.product(*lista_caracteres):
-        # break
-        key = ""
         for index in range(length):
-            key += alfabeto_normal[comb[index]]
             np.subtract(lista_cadenas[index], comb[index], out=lista_cadenas2[index])
-            np.mod(lista_cadenas2[index], 27, out=lista_cadenas2[index])
-        cadena_descifrada_FINAL = ""
+            np.mod(lista_cadenas2[index], dictionaty_length, out=lista_cadenas2[index])
+        j = 0
+
+        cadena_descifrada_FINAL = bytearray(text_len)
         for indice in range(maxima):
             for cad in lista_cadenas2:
-                if (indice < maxima) and (indice < len(cad)):
-                    cad_indice = cad[indice]
-                    char = alfabeto_normal[cad_indice]
-                    cadena_descifrada_FINAL = cadena_descifrada_FINAL + char
-
-        i += 1
-
-        if hashlib.sha256(cadena_descifrada_FINAL.encode()).hexdigest() == hash:
-            print(key, comb, i)
+                try:
+                    cadena_descifrada_FINAL[j]=alfabeto_normal[cad[indice]]
+                    j += 1
+                except:
+                    break
+        # print(cadena_descifrada_FINAL)
+        # print(hashlib.sha256(cadena_descifrada_FINAL).hexdigest())
+        if hashlib.sha256(cadena_descifrada_FINAL).hexdigest() == hash:
+            print(comb, j)
             print(cadena_descifrada_FINAL)
             foundit.set()
             quit.set()
@@ -174,7 +110,7 @@ def main(file_name, hash):
 
     substring_found = {}
     # Substring length
-    substring_len = 3
+    substring_len = 7
 
     # Iterate over all possible substrings until checkIfEnterInElse or text_len
     for i in range(text_len - substring_len + 1):
@@ -217,6 +153,8 @@ def main(file_name, hash):
 
     # Descartamos mcd = 1 para evitar trigramas casuales que nos impidan
     # adivinar la longitud de la clave
+    if len(lista_distancias) < 2:
+        exit(-1)
     longitud_minima = lista_distancias[0]
     for i in lista_distancias[1:]:
         aux = gcd(longitud_minima, i)
@@ -224,21 +162,12 @@ def main(file_name, hash):
             longitud_minima = aux
 
     for longitud in range(longitud_minima, 20):
-        print("La posible longitud de la clave es: " + str(longitud))
-        print()
+        print("Posible longitud de la clave: " + str(longitud))
 
         # Inicializamos a lista con tantos elementos como longitud ten a clave
         lista_subcadenas = [np.array(list(map(chr_to_number, input_text[i::longitud])), dtype=np.int32) for i in range(longitud)]
 
-        for a in range(longitud):
-            print("Cadena ", lista_subcadenas[a])
-            print()
-
         repeticiones_27 = np.zeros(27, dtype=np.uint16)
-        lista_cadenas_descifradas = []
-
-        print("Aplicando algoritmo AEOS...")
-        print("La posible clave es: ", end="")
 
         lista_caracteres_en = []
         lista_caracteres_es = []
@@ -247,13 +176,10 @@ def main(file_name, hash):
             for ordinal in cadena:
                 repeticiones_27[ordinal] += 1
 
-            caracteres_en, caracteres_es, caracteres_fr = descifrar_cadena2(
-                cadena, repeticiones_27)
+            caracteres_en, caracteres_es, caracteres_fr = descifrar_cadena2(repeticiones_27)
             lista_caracteres_en.append(caracteres_en)
             lista_caracteres_es.append(caracteres_es)
             lista_caracteres_fr.append(caracteres_fr)
-
-        print(lista_cadenas_descifradas)
 
 
         # f = functools.partial(check_product, result_key=result_key)
@@ -269,11 +195,11 @@ def main(file_name, hash):
 
         foundit = Event()
         quit = Event()
-        p_en = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_en, length, maxima,
+        p_en = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_en, length, maxima, text_len,
                                                    foundit, quit, hash))
-        p_es = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_es, length, maxima,
+        p_es = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_es, length, maxima, text_len,
                                                    foundit, quit, hash))
-        p_fr = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_fr, length, maxima,
+        p_fr = Process(target=check_product, args=(lista_subcadenas, lista_caracteres_fr, length, maxima, text_len,
                                                    foundit, quit, hash))
         p_en.start()
         p_es.start()
@@ -301,26 +227,6 @@ def main(file_name, hash):
         #
         # if check_product(lista_caracteres_fr, result_key=result_key):
         #     return
-
-        continue
-        print("\n")
-
-        # Calculamos a lonxitude maxima que poden ter as cadenas
-        maxima = 0
-        for cad in lista_cadenas_descifradas:
-            if (len(cad)) > maxima:
-                maxima = len(cad)
-
-        # Desciframos por fin :)
-        cadena_descifrada_FINAL = ""
-        for indice in range(maxima):
-            for cad in lista_cadenas_descifradas:
-                if (indice < maxima) and (indice < len(cad)):
-                    cadena_descifrada_FINAL = cadena_descifrada_FINAL + cad[indice]
-
-
-        print("TEXTO DESCIFRADO: ")
-        print(cadena_descifrada_FINAL)
 
 
 if __name__ == '__main__':
