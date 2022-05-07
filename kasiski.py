@@ -1,11 +1,13 @@
 #! /usr/bin/python3
 import argparse
+import cProfile
 import itertools
 import time
 
 import numpy as np
+from multiprocessing import Process, Event, Barrier, Manager
 
-from freqs import esFrequency, esFrequency_array, frequency_array_27, frequency_array_26
+from freqs import frequency_array_27, frequency_array_26
 
 
 def gcd(a, b):
@@ -128,9 +130,23 @@ def descifrar_cadena(cadena, dict_repeticiones):
 
     return cadena_descifrada
 
+def check_product(lista_caracteres, result_key, foundit, quit, d):
+    i = 0
+    for comb in itertools.product(*lista_caracteres):
+        # break
+        key = ""
+        for ordinal in comb:
+            key += chr(ordinal + 65)
+        i += 1
+        if key == result_key:
+            d["Key"] = key
+            d["Comb"] = comb
+            d["i"] = i
+            foundit.set()
+            quit.set()
+    quit.set()
 
 def main(file_name, result_key):
-
     file_input = open(file_name, mode="r", encoding="utf-8")
 
     input_text = file_input.read().upper()
@@ -222,21 +238,51 @@ def main(file_name, result_key):
 
         print(lista_cadenas_descifradas)
 
-        # for comb in itertools.product(*lista_caracteres_en):
-        #     pass
-        i = 0
-        for comb in itertools.product(*lista_caracteres_es):
-            # break
-            key = ""
-            for ordinal in comb:
-                key += chr(ordinal + 65)
-            i +=1
-            if key == result_key:
-                print(i, comb, key)
+
+        # f = functools.partial(check_product, result_key=result_key)
+        # with Pool(3) as p:
+        #     for return_value in p.map(f, [lista_caracteres_en, lista_caracteres_es, lista_caracteres_fr]):
+        #         if return_value:
+        #             return
+        foundit = Event()
+        quit = Event()
+        barrier = Barrier(3)
+        with Manager() as manager:
+            d = manager.dict()
+            p_en = Process(target=check_product, args=(lista_caracteres_en, result_key, foundit, quit,  d))
+            p_es = Process(target=check_product, args=(lista_caracteres_es, result_key, foundit, quit,  d))
+            p_fr = Process(target=check_product, args=(lista_caracteres_fr, result_key, foundit, quit,  d))
+            p_en.start()
+            p_es.start()
+            p_fr.start()
+
+            quit.wait()
+            if foundit.is_set():
+                print(d)
+                p_en.terminate()
+                p_es.terminate()
+                p_fr.terminate()
                 return
 
-        # for comb in itertools.product(*lista_caracteres_fr):
-        #     pass
+            p_en.join()
+            p_es.join()
+            p_fr.join()
+            if foundit.is_set():
+                print(d)
+                p_en.terminate()
+                p_es.terminate()
+                p_fr.terminate()
+                return
+
+
+        # if check_product(lista_caracteres_es, result_key=result_key):
+        #     return
+        #
+        # if check_product(lista_caracteres_en, result_key=result_key):
+        #     return
+        #
+        # if check_product(lista_caracteres_fr, result_key=result_key):
+        #     return
 
         continue
         print("\n")
@@ -267,4 +313,5 @@ if __name__ == '__main__':
 
     start = time.time()
     main(args.file, args.key)
+    # cProfile.run("main(args.file, args.key)")
     print("--- %s seconds ---" % (time.time() - start))
