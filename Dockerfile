@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENTRYPOINT ["python", "./DiegoMiguelJos3.py"]
+ENTRYPOINT ["python", "./diegomigueljos3.py"]
