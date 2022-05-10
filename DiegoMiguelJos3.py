@@ -123,7 +123,7 @@ alfabeto_26 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 alfabeto_27 = "ABCDEFGHIJKLMN\xb1OPQRSTUVWXYZ"
 
 def main(file_name):
-    const = 0.3
+    const = 0.21
     file_input = open(file_name, mode="r", encoding="utf-8")
 
     input_text = file_input.read()
@@ -143,7 +143,7 @@ def main(file_name):
         i += 1
         substring_len = substring_lens[i]
 
-    # longitud_minima = 7
+    # longitud_minima = 12
     while True:
         print("Posible longitud de la clave: " + str(longitud_minima))
 
