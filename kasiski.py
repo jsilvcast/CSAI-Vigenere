@@ -141,7 +141,7 @@ def main(file_name):
         i += 1
         substring_len = substring_lens[i]
 
-    longitud_minima = 2
+    # longitud_minima = 2
     while True:
         print("Posible longitud de la clave: " + str(longitud_minima))
 
