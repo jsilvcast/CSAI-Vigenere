@@ -131,7 +131,6 @@ def main(file_name):
 
     # Substring length
     substring_lens = [7, 5, 2, 3, 4, 6, 11, 8, 13]
-    substring_len = substring_lens[0]
     longitud_minima = 1
 
     with_n = input_text.find("Ñ") > 0
