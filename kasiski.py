@@ -2,7 +2,6 @@
 import cProfile
 import sys
 import time
-from multiprocessing import Pool
 
 import numpy as np
 
@@ -23,28 +22,6 @@ def gcd(a, b):
         a, b = b, a % b
     return a
 
-# Function to sort the list of tuples by its second item
-def sortTuple(tup):
-
-    # getting length of list of tuples
-    lst = len(tup)
-    for i in range(0, lst):
-
-        for j in range(0, lst - i - 1):
-            if (tup[j][1] <= tup[j + 1][1]):
-                temp = tup[j]
-                tup[j] = tup[j + 1]
-                tup[j + 1] = temp
-    return tup
-
-def sorted_enumerate(seq):
-    list = [0] * len(seq)
-    k = 0
-    for (_, i) in reversed(sorted((v, i) for (i, v) in enumerate(seq))):
-        list[k] = i
-        k += 1
-    return list
-
 def descifrar_cadena(repeticiones, dictionary, frequency_array):
     repeticiones_desp = np.zeros((dictionary, dictionary), dtype=np.compat.long)
     repeticiones_desp[0] = repeticiones
@@ -54,8 +31,7 @@ def descifrar_cadena(repeticiones, dictionary, frequency_array):
     xx1 = np.divide(x_power, frequency_array, where=frequency_array!=0)
     xx2 = np.sum(xx1, where=xx1!=np.inf, axis=1)
     index_min = np.argmin(xx2)
-    if xx2[index_min] < 0:
-        print(index_min, xx2[index_min])
+
     return index_min, xx2[index_min]
 
 def multi_solve(lista_subcadenas, dictionary, alfabeto, frequency_array):
@@ -182,10 +158,8 @@ def main(file_name):
                             (lista_subcadenas_27, 27, alfabeto_27, enFrequency_array_27),
                             (lista_subcadenas_27, 27, alfabeto_27, frFrequency_array_27)]
 
-        results = []
 
-        for comb in combinations:
-            results.append(multi_solve(*comb))
+        results = [multi_solve(*comb) for comb in combinations]
 
         # with Pool() as pool:
         #     results = pool.starmap(multi_solve, combinations)
