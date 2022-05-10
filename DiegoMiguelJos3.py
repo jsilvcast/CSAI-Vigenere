@@ -131,17 +131,16 @@ def main(file_name):
 
     # Substring length
     substring_lens = [7, 5, 2, 3, 4, 6, 11, 8, 13]
-    i = 0
     substring_len = substring_lens[0]
     longitud_minima = 1
 
     with_n = input_text.find("Ñ") > 0
 
-    while longitud_minima <= 1:
+    for substring_len in substring_lens:
         print("Trying substring length:", substring_len)
         longitud_minima = kasiski_length(input_text, text_len, substring_len)
-        i += 1
-        substring_len = substring_lens[i]
+        if longitud_minima > 1:
+            break
 
     # longitud_minima = 12
     while True:
