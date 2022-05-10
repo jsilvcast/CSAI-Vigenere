@@ -136,18 +136,13 @@ def main(file_name):
     with_n = input_text.find("Ñ") > 0
 
     for substring_len in substring_lens:
-        print("Trying substring length:", substring_len)
         longitud_minima = kasiski_length(input_text, text_len, substring_len)
         if longitud_minima > 1:
             break
 
     # longitud_minima = 12
     while True:
-        print("Posible longitud de la clave: " + str(longitud_minima))
-
         # Inicializamos a lista con tantos elementos como longitud ten a clave
-
-
         lista_subcadenas_27 = [np.array(list(map(chr_to_number_27, input_text[i::longitud_minima])), dtype=np.int32)
                                for i in range(longitud_minima)]
         lista_frecuencias_27 = []
@@ -205,15 +200,12 @@ def main(file_name):
                 value = results[result_index][1]
                 index = result_index
 
-            # print(results[result_index][0], results[result_index][1])
         if with_n:
             repeticiones = lista_frecuencias_27[0][key[0]]
             for key_dep_index in range(1, longitud_minima):
                  repeticiones = repeticiones + lista_frecuencias_27[key_dep_index][key[key_dep_index]]
 
             score = descifrar_cadena_final(repeticiones, frequency_list_27[index % 3])
-            print(score, key)
-            print()
             if score < const:
                 clave_final = ""
                 for x in key:
@@ -227,8 +219,6 @@ def main(file_name):
                     repeticiones = repeticiones + lista_frecuencias_26[key_dep_index][key[key_dep_index]]
                 score = descifrar_cadena_final(repeticiones, frequency_list_26[index % 3])
 
-                print(score, key)
-                print()
                 if score < const:
                     clave_final = ""
                     for x in key:
@@ -242,8 +232,6 @@ def main(file_name):
                     repeticiones = repeticiones + lista_frecuencias_27[key_dep_index][key[key_dep_index]]
                 score = descifrar_cadena_final(repeticiones, frequency_list_27[index % 3])
 
-                print(score, key)
-                print()
                 if score < const:
                     clave_final = ""
                     for x in key:
@@ -257,5 +245,3 @@ def main(file_name):
 if __name__ == '__main__':
     start = time.time()
     main(sys.argv[1])
-    # cProfile.run("main(sys.argv[1])")
-    print("--- %s seconds ---" % (time.time() - start))
