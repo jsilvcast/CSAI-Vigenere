@@ -22,11 +22,15 @@ def gcd(a, b):
         a, b = b, a % b
     return a
 
-def descifrar_cadena(repeticiones, dictionary, frequency_array):
-    repeticiones_desp = np.zeros((dictionary, dictionary), dtype=np.compat.long)
-    repeticiones_desp[0] = repeticiones
-    for i in range(1, dictionary):
-        repeticiones_desp[i] = np.roll(repeticiones, -i)
+def descifrar_cadena_final(repeticiones, frequency_array):
+    frequency_array = frequency_array / 100
+    repeticiones = repeticiones / repeticiones.sum()
+    x_power = np.power(np.subtract(repeticiones, frequency_array), 2)
+    xx1 = np.divide(x_power, frequency_array, where=frequency_array!=0)
+    return np.sum(xx1, where=xx1!=np.inf, axis=0)
+
+
+def descifrar_cadena(repeticiones_desp, frequency_array):
     x_power = np.power(np.subtract(repeticiones_desp, frequency_array), 2)
     xx1 = np.divide(x_power, frequency_array, where=frequency_array!=0)
     xx2 = np.sum(xx1, where=xx1!=np.inf, axis=1)
@@ -34,16 +38,16 @@ def descifrar_cadena(repeticiones, dictionary, frequency_array):
 
     return index_min, xx2[index_min]
 
-def multi_solve(lista_subcadenas, dictionary, alfabeto, frequency_array):
-    key = ""
+def multi_solve(lista_subcadenas, frequency_array):
+    key = []
     value = 0
     for cadena in lista_subcadenas:
-        repeticiones = np.zeros(dictionary, dtype=np.uint32)
-        for ordinal in cadena:
-            repeticiones[ordinal] += 1
+        # repeticiones = np.zeros(dictionary, dtype=np.uint32)
+        # for ordinal in cadena:
+        #     repeticiones[ordinal] += 1
 
-        index_min, value_min = descifrar_cadena(repeticiones, dictionary, frequency_array)
-        key += alfabeto[index_min]
+        index_min, value_min = descifrar_cadena(cadena, frequency_array)
+        key.append(index_min)
         value += value_min
     return key, value
 
@@ -111,6 +115,9 @@ esFrequency_array_27 = np.array([12.027,2.215,4.019,5.010,12.614,0.692,1.768,0.7
 frFrequency_array_26 = np.array([8.7,0.93,3.16,3.55,17.82,0.96,0.97,1.08,6.98,0.71,0.16,5.68,3.23,6.42,5.34,3.03,0.89,6.43,7.91,7.11,6.1,1.83,0.04,0.42,0.19,0.21])
 frFrequency_array_27 = np.array([8.7,0.93,3.16,3.55,17.82,0.96,0.97,1.08,6.98,0.71,0.16,5.68,3.23,6.42,0,5.34,3.03,0.89,6.43,7.91,7.11,6.1,1.83,0.04,0.42,0.19,0.21])
 
+frequency_list_26 = [esFrequency_array_26, enFrequency_array_26, frFrequency_array_26]
+frequency_list_27 = [esFrequency_array_27, enFrequency_array_27, frFrequency_array_27]
+
 alfabeto_26 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 alfabeto_27 = "ABCDEFGHIJKLMN\xb1OPQRSTUVWXYZ"
 
@@ -134,6 +141,7 @@ def main(file_name):
         i += 1
         substring_len = substring_lens[i]
 
+    longitud_minima = 2
     while True:
         print("Posible longitud de la clave: " + str(longitud_minima))
 
@@ -142,41 +150,98 @@ def main(file_name):
 
         lista_subcadenas_27 = [np.array(list(map(chr_to_number_27, input_text[i::longitud_minima])), dtype=np.int32)
                                for i in range(longitud_minima)]
+        for cadena_index in range(len(lista_subcadenas_27)):
+            repeticiones = np.zeros(27, dtype=np.uint32)
+            cadena = lista_subcadenas_27[cadena_index]
+            for ordinal in cadena:
+                repeticiones[ordinal] += 1
+            repeticiones_desp = np.zeros((27, 27), dtype=np.compat.long)
+            repeticiones_desp[0] = repeticiones
+            for i in range(1, 27):
+                repeticiones_desp[i] = np.roll(repeticiones, -i)
+            lista_subcadenas_27[cadena_index] = repeticiones_desp
 
         if with_n:
-            combinations = [(lista_subcadenas_27, 27, alfabeto_27, esFrequency_array_27),
-                            (lista_subcadenas_27, 27, alfabeto_27, enFrequency_array_27),
-                            (lista_subcadenas_27, 27, alfabeto_27, frFrequency_array_27)]
+            combinations = [(lista_subcadenas_27, esFrequency_array_27),
+                            (lista_subcadenas_27, enFrequency_array_27),
+                            (lista_subcadenas_27, frFrequency_array_27)]
 
         else:
             lista_subcadenas_26 = [np.array(list(map(chr_to_number_26, input_text[i::longitud_minima])), dtype=np.int32)
                                    for i in range(longitud_minima)]
-            combinations = [(lista_subcadenas_26, 26, alfabeto_26, esFrequency_array_26),
-                            (lista_subcadenas_26, 26, alfabeto_26, enFrequency_array_26),
-                            (lista_subcadenas_26, 26, alfabeto_26, frFrequency_array_26),
-                            (lista_subcadenas_27, 27, alfabeto_27, esFrequency_array_27),
-                            (lista_subcadenas_27, 27, alfabeto_27, enFrequency_array_27),
-                            (lista_subcadenas_27, 27, alfabeto_27, frFrequency_array_27)]
+            for cadena_index in range(len(lista_subcadenas_27)):
+                repeticiones = np.zeros(26, dtype=np.uint32)
+                cadena = lista_subcadenas_26[cadena_index]
+                for ordinal in cadena:
+                    repeticiones[ordinal] += 1
+                repeticiones_desp = np.zeros((26, 26), dtype=np.compat.long)
+                repeticiones_desp[0] = repeticiones
+                for i in range(1, 26):
+                    repeticiones_desp[i] = np.roll(repeticiones, -i)
+                lista_subcadenas_26[cadena_index] = repeticiones_desp
+
+            combinations = [(lista_subcadenas_26, esFrequency_array_26),
+                            (lista_subcadenas_26, enFrequency_array_26),
+                            (lista_subcadenas_26, frFrequency_array_26),
+                            (lista_subcadenas_27, esFrequency_array_27),
+                            (lista_subcadenas_27, enFrequency_array_27),
+                            (lista_subcadenas_27, frFrequency_array_27)]
 
 
         results = [multi_solve(*comb) for comb in combinations]
 
-        # with Pool() as pool:
-        #     results = pool.starmap(multi_solve, combinations)
-        #
-        #     print(results)
         key = results[0][0]
         value = results[0][1]
-        for result in results:
-            if value > result[1]:
-                key = result[0]
-                value = result[1]
-            print(result[0], result[1]/longitud_minima)
-        print()
-        print(key, value/longitud_minima)
+        index = 0
+        for result_index in range(len(results)):
+            if value > results[result_index][1]:
+                key = results[result_index][0]
+                value = results[result_index][1]
+                index = result_index
+
+            # print(results[result_index][0], results[result_index][1])
+        if with_n:
+            repeticiones = lista_subcadenas_27[0][key[0]]
+            for key_dep_index in range(1, longitud_minima):
+                 repeticiones = repeticiones + lista_subcadenas_27[key_dep_index][key[key_dep_index]]
+
+            score = descifrar_cadena_final(repeticiones, frequency_list_27[index % 3])
+
+            if score < 0.1:
+                clave_final = ""
+                for x in key:
+                    clave_final += alfabeto_27[x]
+                print(clave_final)
+                return
+        else:
+            if index < 3:
+                repeticiones = lista_subcadenas_26[0][key[0]]
+                for key_dep_index in range(1, longitud_minima):
+                    repeticiones = repeticiones + lista_subcadenas_26[key_dep_index][key[key_dep_index]]
+                score = descifrar_cadena_final(repeticiones, frequency_list_26[index % 3])
+
+                if score < 0.1:
+                    clave_final = ""
+                    for x in key:
+                        clave_final += alfabeto_26[x]
+                    print(clave_final)
+                    return
+
+            else:
+                repeticiones = lista_subcadenas_27[0][key[0]]
+                for key_dep_index in range(1, longitud_minima):
+                    repeticiones = repeticiones + lista_subcadenas_27[key_dep_index][key[key_dep_index]]
+                score = descifrar_cadena_final(repeticiones, frequency_list_27[index % 3])
+
+                if score < 0.1:
+                    clave_final = ""
+                    for x in key:
+                        clave_final += alfabeto_27[x]
+                    print(clave_final)
+                    return
+
 
         longitud_minima += 1
-        return
 
 if __name__ == '__main__':
     start = time.time()
